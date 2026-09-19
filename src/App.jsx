@@ -1,122 +1,136 @@
-import { useState } from 'react'
-import heroImg from './assets/hero.png'
-import reactLogo from './assets/react.svg'
-import viteLogo from './assets/vite.svg'
-import './App.css'
+import { useMemo, useState } from "react";
+import books from "./data/books";
+import Navbar from "./components/Navbar";
+import BookGrid from "./components/BookGrid";
+import CategoryFilter from "./components/CategoryFilter";
+import "./index.css";
 
 function App() {
-  const [count, setCount] = useState(0)
+  const [search, setSearch] = useState("");
+  const [category, setCategory] = useState("All");
+  const [sort, setSort] = useState("default");
+  const [cart, setCart] = useState([]);
+
+  const categories = [
+    "All",
+    ...new Set(books.map((book) => book.category)),
+  ];
+
+  const filteredBooks = useMemo(() => {
+    let result = books.filter((book) => {
+      const matchesSearch =
+        book.title.toLowerCase().includes(search.toLowerCase()) ||
+        book.author.toLowerCase().includes(search.toLowerCase());
+
+      const matchesCategory =
+        category === "All" || book.category === category;
+
+      return matchesSearch && matchesCategory;
+    });
+
+    if (sort === "price-low") {
+      result.sort((a, b) => a.price - b.price);
+    }
+
+    if (sort === "price-high") {
+      result.sort((a, b) => b.price - a.price);
+    }
+
+    if (sort === "rating") {
+      result.sort((a, b) => b.rating - a.rating);
+    }
+
+    if (sort === "newest") {
+      result.sort((a, b) => b.publishedYear - a.publishedYear);
+    }
+
+    return result;
+  }, [search, category, sort]);
+
+  const addToCart = (book) => {
+    setCart((currentCart) => {
+      const existing = currentCart.find((item) => item.id === book.id);
+
+      if (existing) {
+        return currentCart.map((item) =>
+          item.id === book.id
+            ? { ...item, quantity: item.quantity + 1 }
+            : item
+        );
+      }
+
+      return [...currentCart, { ...book, quantity: 1 }];
+    });
+  };
+
+  const cartCount = cart.reduce(
+    (total, item) => total + item.quantity,
+    0
+  );
 
   return (
-    <>
-      <section id="center">
-        <div className="hero">
-          <img src={heroImg} className="base" width="170" height="179" alt="" />
-          <img src={reactLogo} className="framework" alt="React logo" />
-          <img src={viteLogo} className="vite" alt="Vite logo" />
-        </div>
-        <div>
-          <h1>Get started</h1>
-          <p>
-            Edit <code>src/App.jsx</code> and save to test <code>HMR</code>
-          </p>
-        </div>
-        <button
-          type="button"
-          className="counter"
-          onClick={() => setCount((count) => count + 1)}
-        >
-          Count is {count}
-        </button>
-      </section>
+    <div className="app">
+      <Navbar cartCount={cartCount} />
 
-      <div className="ticks"></div>
+      <main>
+        <section className="hero">
+          <div>
+            <span className="hero-badge">Discover your next read</span>
 
-      <section id="next-steps">
-        <div id="docs">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#documentation-icon"></use>
-          </svg>
-          <h2>Documentation</h2>
-          <p>Your questions, answered</p>
-          <ul>
-            <li>
-              <a href="https://vite.dev/" target="_blank">
-                <img className="logo" src={viteLogo} alt="" />
-                Explore Vite
-              </a>
-            </li>
-            <li>
-              <a href="https://react.dev/" target="_blank">
-                <img className="button-icon" src={reactLogo} alt="" />
-                Learn more
-              </a>
-            </li>
-          </ul>
-        </div>
-        <div id="social">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#social-icon"></use>
-          </svg>
-          <h2>Connect with us</h2>
-          <p>Join the Vite community</p>
-          <ul>
-            <li>
-              <a href="https://github.com/vitejs/vite" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#github-icon"></use>
-                </svg>
-                GitHub
-              </a>
-            </li>
-            <li>
-              <a href="https://chat.vite.dev/" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#discord-icon"></use>
-                </svg>
-                Discord
-              </a>
-            </li>
-            <li>
-              <a href="https://x.com/vite_js" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#x-icon"></use>
-                </svg>
-                X.com
-              </a>
-            </li>
-            <li>
-              <a href="https://bsky.app/profile/vite.dev" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#bluesky-icon"></use>
-                </svg>
-                Bluesky
-              </a>
-            </li>
-          </ul>
-        </div>
-      </section>
+            <h1>
+              Stories that
+              <span> stay with you.</span>
+            </h1>
 
-      <div className="ticks"></div>
-      <section id="spacer"></section>
-    </>
-  )
+            <p>
+              Explore our collection of bestselling books, timeless
+              classics, and inspiring stories.
+            </p>
+
+            <div className="search-wrapper">
+              <input
+                type="text"
+                placeholder="Search books or authors..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+              />
+            </div>
+          </div>
+        </section>
+
+        <section className="catalog">
+          <div className="catalog-header">
+            <div>
+              <h2>Explore Books</h2>
+              <p>{filteredBooks.length} books found</p>
+            </div>
+
+            <select
+              value={sort}
+              onChange={(e) => setSort(e.target.value)}
+            >
+              <option value="default">Sort by</option>
+              <option value="rating">Highest Rated</option>
+              <option value="price-low">Price: Low to High</option>
+              <option value="price-high">Price: High to Low</option>
+              <option value="newest">Newest</option>
+            </select>
+          </div>
+
+          <CategoryFilter
+            categories={categories}
+            selected={category}
+            onChange={setCategory}
+          />
+
+          <BookGrid
+            books={filteredBooks}
+            onAddToCart={addToCart}
+          />
+        </section>
+      </main>
+    </div>
+  );
 }
 
-export default App
+export default App;
